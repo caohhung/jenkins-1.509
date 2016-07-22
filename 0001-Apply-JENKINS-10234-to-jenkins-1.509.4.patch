@@ -1,0 +1,108 @@
+From 9579bb81907a10d267f0f2d59b48b4e5220ac033 Mon Sep 17 00:00:00 2001
+From: Hung Cao Hiep <hung.cao@gooddata.com>
+Date: Fri, 22 Jul 2016 10:16:28 +0700
+Subject: [PATCH] Apply JENKINS-10234 to jenkins-1.509.4
+
+---
+ changelog.html                                               |  6 ++++++
+ core/main/java/hudson/tasks/junit/JUnitResultArchiver.java   | 13 -------------
+ core/java/jenkins/security/DefaultConfidentialStore.java     |  7 +++++++
+ 3 files changed, 13 insertions(+), 13 deletions(-)
+
+diff --git a/changelog.html b/changelog.html
+index 91fc12a..5fe3149 100644
+--- a/changelog.html
++++ b/changelog.html
+@@ -55,6 +55,12 @@ Upcoming changes</a>
+ <!-- Record your changes in the trunk here. -->
+ <div id="trunk" style="display:none"><!--=TRUNK-BEGIN=-->
+ <ul class=image>
++  <li class="bug">
++    Should not stop a build from finishing just to compute JUnit result difference to a prior build which is still running.
++    (<a href="https://issues.jenkins-ci.org/browse/JENKINS-10234">issue 10234</a>)
++  <li class=bug>
++    After recent Java security updates, Jenkins would not gracefully recover from a deleted <code>secrets/master.key</code>.
++    (<a href="https://issues.jenkins-ci.org/browse/JENKINS-25937">issue 25937</a>)
+   <li class=bug>
+     Fixed a dead lock in the <tt>Project</tt> class and improved the signature of the persisted XML form a bit.
+     (<a href="https://issues.jenkins-ci.org/browse/JENKINS-18589">issue 18589</a>)
+diff --git a/core/src/main/java/hudson/tasks/junit/JUnitResultArchiver.java b/core/src/main/java/hudson/tasks/junit/JUnitResultArchiver.java
+index 294cd95..0df4f86 100644
+--- a/core/src/main/java/hudson/tasks/junit/JUnitResultArchiver.java
++++ b/core/src/main/java/hudson/tasks/junit/JUnitResultArchiver.java
+@@ -35,7 +35,6 @@ import hudson.model.AbstractBuild;
+ import hudson.model.AbstractProject;
+ import hudson.model.Action;
+ import hudson.model.BuildListener;
+-import hudson.model.CheckPoint;
+ import hudson.model.Descriptor;
+ import hudson.model.Result;
+ import hudson.model.Saveable;
+@@ -155,8 +154,6 @@ public class JUnitResultArchiver extends Recorder implements MatrixAggregatable
+ 
+ 			action.setData(data);
+ 
+-			CHECKPOINT.block();
+-
+ 		} catch (AbortException e) {
+ 			if (build.getResult() == Result.FAILURE)
+ 				// most likely a build failed before it gets to the test phase.
+@@ -173,7 +170,6 @@ public class JUnitResultArchiver extends Recorder implements MatrixAggregatable
+ 		}
+ 
+ 		build.getActions().add(action);
+-		CHECKPOINT.report();
+ 
+ 		if (action.getResult().getFailCount() > 0)
+ 			build.setResult(Result.UNSTABLE);
+@@ -191,9 +187,6 @@ public class JUnitResultArchiver extends Recorder implements MatrixAggregatable
+ 		return new TestResult(buildTime, ds);
+ 	}
+ 
+-	/**
+-	 * This class does explicit checkpointing.
+-	 */
+ 	public BuildStepMonitor getRequiredMonitorService() {
+ 		return BuildStepMonitor.NONE;
+ 	}
+@@ -223,12 +216,6 @@ public class JUnitResultArchiver extends Recorder implements MatrixAggregatable
+ 		return keepLongStdio;
+ 	}
+ 
+-	/**
+-	 * Test result tracks the diff from the previous run, hence the checkpoint.
+-	 */
+-	private static final CheckPoint CHECKPOINT = new CheckPoint(
+-			"JUnit result archiving");
+-
+ 	private static final long serialVersionUID = 1L;
+ 
+     @Extension
+diff --git a/core/src/main/java/jenkins/security/DefaultConfidentialStore.java b/core/src/main/java/jenkins/security/DefaultConfidentialStore.java
+index 476f437..e35d1ac 100644
+--- a/core/src/main/java/jenkins/security/DefaultConfidentialStore.java
++++ b/core/src/main/java/jenkins/security/DefaultConfidentialStore.java
+@@ -18,6 +18,7 @@ import java.io.FileOutputStream;
+ import java.io.IOException;
+ import java.security.GeneralSecurityException;
+ import java.security.SecureRandom;
++import javax.crypto.BadPaddingException;
+ 
+ /**
+  * Default portable implementation of {@link ConfidentialStore} that uses
+@@ -108,6 +109,12 @@ public class DefaultConfidentialStore extends ConfidentialStore {
+             return verifyMagic(bytes);
+         } catch (GeneralSecurityException e) {
+             throw new IOException2("Failed to persist the key: "+key.getId(),e);
++        } catch (IOException x) {
++            if (x.getCause() instanceof BadPaddingException) {
++                return null; // broken somehow
++            } else {
++                throw x;
++            }
+         } finally {
+             IOUtils.closeQuietly(cis);
+             IOUtils.closeQuietly(fis);
+-- 
+1.9.1
+
