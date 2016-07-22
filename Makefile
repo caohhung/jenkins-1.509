@@ -1,6 +1,7 @@
 all: srpm
 
 srpm:
+	./build.sh
 
 clean:
 	git clean -ffd

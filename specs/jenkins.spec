@@ -5,13 +5,11 @@ License:        MIT
 Summary:        An extendable open source continuous integration server
 Url:            https://jenkins-ci.org
 Group:          Development/Tools/Building
-Source:         %{name}-%{name}-%{version}.4.tar.gz
+Source0:        %{name}.war
 Source1:        %{name}.init
 Source2:        %{name}.sysconfig
 Source3:        %{name}.logrotate
 Source4:        %{name}.repo
-Source5:        %{name}.war
-Patch1:         0001-Apply-JENKINS-10234-to-jenkins-1.509.4.patch
 Requires:       java >= 1.7
 Requires(pre):	maven
 Requires(pre):	java >= 1.7
@@ -41,18 +39,11 @@ tjen      easier for developers to integrate changes to the project, and
 
 %prep
 %setup -q -c
-rm -fv %{name}.war
-pushd %{name}-%{name}-%{version}.4
-%patch1 -p1
-ls /usr/lib/jvm/java-1.7.0
-mvn -Plight-test install -Dlicense.disableCheck
-cp war/target/jenkins.war ../
-popd
 
 %build
 
 %install
-install -Dm0644 %{SOURCE5} %{buildroot}%{_prefix}/lib/%{name}/%{name}.war
+install -Dm0644 %{SOURCE0} %{buildroot}%{_prefix}/lib/%{name}/%{name}.war
 install -Dm0755 %{SOURCE1} %{buildroot}%{_sysconfdir}/init.d/%{name}
 install -Dm0644 %{SOURCE2} %{buildroot}%{_sysconfdir}/sysconfig/%{name}
 install -Dm0644 %{SOURCE3} %{buildroot}%{_sysconfdir}/logrotate.d/%{name}
