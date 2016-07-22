@@ -3,9 +3,13 @@
 set -x
 set -e
 SPECFILE='specs/jenkins.spec'
-PACKAGE='jenkins-jenkins-1.509.4'
+PACKAGE='jenkins-1.509.4'
+
+spectool -g $SPECFILE -s 5
 rm -rfv $PACKAGE
 tar -zxf $PACKAGE.tar.gz
+mv jenkins-$PACKAGE $PACKAGE
+
 pushd $PACKAGE
 patch -p1 < ../0001-Apply-JENKINS-10234-to-jenkins-1.509.4.patch
 export JAVA_HOME='/usr/lib/jvm/java-1.7.0'

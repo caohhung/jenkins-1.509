@@ -10,8 +10,8 @@ Source1:        %{name}.init
 Source2:        %{name}.sysconfig
 Source3:        %{name}.logrotate
 Source4:        %{name}.repo
+Source5:        https://github.com/jenkinsci/jenkins/archive/jenkins-1.509.4.tar.gz
 Requires:       java >= 1.7
-Requires(pre):	maven
 Requires(pre):	java >= 1.7
 Provides:       hudson = %{version}
 Obsoletes:      hudson < %{version}
@@ -74,7 +74,8 @@ useradd -g jenkins -s /bin/false -r -c "Jenkins Continuous Build server" -d /var
 %config %{_sysconfdir}/init.d/%{name}
 %config(noreplace) %{_sysconfdir}/logrotate.d/%{name}
 #%%config(noreplace) %%{_sysconfdir}/sysconfig/%%{name}
-%{_localstatedir}/adm/fillup-templates/sysconfig.%{name}
+%{_sysconfdir}/sysconfig/%{name}
+%{_sysconfdir}/yum.repos.d/%{name}.repo
 %attr(0755,jenkins,jenkins) %dir %{_localstatedir}/lib/%{name}
 %attr(0755,jenkins,jenkins) %{_localstatedir}/log/%{name}
 
